@@ -349,6 +349,8 @@ def gen_quota_sheet(rc, xls_wb):
             ws_quota.cell(row=act_row, column=2, value='Quotas').style = 'style_title'
             ws_quota.cell(row=act_row, column=3, value='No quotas defined on this cluster').style = 'style_normal'
 
+# Generate SMB Sheet
+
 
 def gen_smb_sheet(rc, xls_wb):
     # Get all smb shares
@@ -505,5 +507,94 @@ def gen_smb_sheet(rc, xls_wb):
                 act_row = act_row + 1
 
         # Create a thin separation line between tables
+        ws_smb.merge_cells(start_row=act_row, start_column=2, end_row=act_row, end_column=4)
         ws_smb.row_dimensions[act_row].height = 20
         act_row = act_row + 1
+
+# Generate NFS Sheet
+
+
+def gen_nfs_sheet(rc, xls_wb):
+    # Get all NFS exports
+    exports = rc.nfs.nfs_list_exports()
+
+    # Create and format 7th sheet for NFS Exports
+    ws_nfs = xls_wb.create_sheet(title="NFS Exports")
+    ws_nfs.column_dimensions['A'].width = 1
+    ws_nfs.row_dimensions[1].height = 5
+    ws_nfs.column_dimensions['B'].width = 30
+    ws_nfs.column_dimensions['C'].width = 10
+    ws_nfs.column_dimensions['D'].width = 50
+    act_row = 2
+
+    # Generate a table for each export
+    for export in exports:
+
+        # Generate Table Title with export name (export_path)
+        ws_nfs.merge_cells(start_row=act_row, start_column=2, end_row=act_row, end_column=4)
+        ws_nfs.cell(row=act_row, column=2, value=f"Export : {export['export_path']}").style = 'style_title'
+        ws_nfs.cell(row=act_row, column=3).style = 'style_title'
+        ws_nfs.cell(row=act_row, column=4).style = 'style_title'
+        act_row = act_row + 1
+
+        # Get Path
+        ws_nfs.cell(row=act_row, column=2, value='Path').style = 'style_title'
+        ws_nfs.merge_cells(start_row=act_row, start_column=3, end_row=act_row, end_column=4)
+        ws_nfs.cell(row=act_row, column=3, value=export['fs_path']).style = 'style_normal'
+        ws_nfs.cell(row=act_row, column=4).style = 'style_normal'
+        act_row = act_row + 1
+
+        # Get Description
+        ws_nfs.cell(row=act_row, column=2, value='Description').style = 'style_title'
+        ws_nfs.merge_cells(start_row=act_row, start_column=3, end_row=act_row, end_column=4)
+        ws_nfs.cell(row=act_row, column=3, value=export['description']).style = 'style_normal'
+        ws_nfs.cell(row=act_row, column=4).style = 'style_normal'
+        act_row = act_row + 1
+
+        # Get Hosts restrictions
+        ws_nfs.merge_cells(start_row=act_row, start_column=2, end_row=act_row, end_column=4)
+        ws_nfs.cell(row=act_row, column=2, value="Hosts Restrictions").style = 'style_title'
+        ws_nfs.cell(row=act_row, column=3).style = 'style_title'
+        ws_nfs.cell(row=act_row, column=4).style = 'style_title'
+        act_row = act_row + 1
+
+        ws_nfs.cell(row=act_row, column=2, value="Allowed IPs").style = 'style_title'
+        ws_nfs.cell(row=act_row, column=3, value="Read-only").style = 'style_title'
+        ws_nfs.cell(row=act_row, column=4, value="User mapping").style = 'style_title'
+        act_row = act_row + 1
+
+        for restric in export['restrictions']:
+            # Format IP ranges / network to fit Excel cell (1 range per line)
+            allowed_ips = ''
+            for host_restric in restric['host_restrictions']:
+                allowed_ips = allowed_ips + host_restric + "\n"
+            allowed_ips = allowed_ips.rstrip("\n")
+            # Replace empty range by * in Excel cell
+            if allowed_ips == '':
+                allowed_ips = "*"
+            ws_nfs.cell(row=act_row, column=2, value=allowed_ips).style = 'style_normal'
+
+            # Get Read-Only parameter
+            ws_nfs.cell(row=act_row, column=3, value=restric['read_only']).style = 'style_normal'
+
+            # Get User mapping
+
+            # Case with no mapping
+            if restric['user_mapping'] == "NFS_MAP_NONE":
+                ws_nfs.cell(row=act_row, column=4, value="no mapping").style = 'style_normal'
+
+            # Case with mapping all users
+            if restric['user_mapping'] == "NFS_MAP_ALL":
+                map_rule = "Map all users to " + restric['map_to_user']['id_value']
+                ws_nfs.cell(row=act_row, column=4, value=map_rule).style = 'style_normal'
+
+            # Case with mapping root user
+            if restric['user_mapping'] == "NFS_MAP_ROOT":
+                map_rule = "Map root user to " + restric['map_to_user']['id_value']
+                ws_nfs.cell(row=act_row, column=4, value=map_rule).style = 'style_normal'
+            act_row = act_row + 1
+
+            # Create a thin separation line between tables
+            ws_nfs.merge_cells(start_row=act_row, start_column=2, end_row=act_row, end_column=4)
+            ws_nfs.row_dimensions[act_row].height = 15
+            act_row = act_row + 1
