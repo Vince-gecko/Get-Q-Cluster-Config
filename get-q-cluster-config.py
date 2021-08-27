@@ -13,6 +13,9 @@ Will use Qumulo API to retrieve information about cluster config such as :
 Then generate an Excel spreadsheet with all these information
 '''
 
+__Author__ = "Vincent Lamy"
+__version__ = "2021.06.01"
+
 # import statements
 from qumulo.rest_client import RestClient
 import openpyxl
